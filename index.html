@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz & Practice Portal</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col font-sans">
+
+    <!-- Header -->
+    <header class="bg-indigo-600 text-white shadow-md">
+        <div class="max-w-2xl mx-auto px-6 py-4 flex justify-between items-center">
+            <h1 class="text-lg font-bold flex items-center gap-2">🎓 Quiz & Practice Portal</h1>
+            <div id="user-badge" class="hidden flex items-center gap-3">
+                <span id="display-name" class="text-sm bg-indigo-700 px-3 py-1 rounded-full font-medium"></span>
+                <button onclick="logout()" class="bg-red-500 hover:bg-red-600 px-3 py-1 rounded text-sm transition">Logout</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow max-w-2xl w-full mx-auto p-4 sm:p-6 my-6">
+
+        <!-- 1. LOGIN VIEW -->
+        <div id="view-login" class="bg-white rounded-2xl shadow-xl p-8 border border-slate-200 space-y-5">
+            <h2 class="text-2xl font-bold text-center text-slate-900">Welcome</h2>
+            <p class="text-center text-slate-500 text-sm">Choose your role to get started</p>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Select Role</label>
+                    <select id="login-role" onchange="toggleLoginFields()" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                        <option value="student">Student (Practice Mode)</option>
+                        <option value="admin">Admin (Manage Questions)</option>
+                    </select>
+                </div>
+
+                <div id="field-student-name">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Your Full Name</label>
+                    <input type="text" id="student-name" placeholder="Enter your name" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+
+                <div id="field-admin-pass" class="hidden">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Admin Password</label>
+                    <input type="password" id="admin-pass" placeholder="Password (default: admin123)" class="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+
+                <button onclick="handleLogin()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 rounded-lg shadow transition">
+                    Continue
+                </button>
+            </div>
+        </div>
+
+        <!-- 2. ADMIN VIEW -->
+        <div id="view-admin" class="hidden space-y-6">
+            <div class="bg-white rounded-2xl shadow-md p-6 border border-slate-200 flex justify-between items-center">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900">Admin Panel</h2>
+                    <p class="text-sm text-slate-500">Create and manage questions.</p>
+                </div>
+                <div class="flex gap-1 bg-slate-100 p-1 rounded-lg">
+                    <button onclick="switchAdminTab('single')" id="tab-single-btn" class="px-3 py-1.5 text-xs font-semibold rounded-md bg-white text-indigo-600 shadow-sm transition">Single</button>
+                    <button onclick="switchAdminTab('bulk')" id="tab-bulk-btn" class="px-3 py-1.5 text-xs font-semibold rounded-md text-slate-600 transition">Bulk JSON</button>
+                    <button onclick="switchAdminTab('manage')" id="tab-manage-btn" class="px-3 py-1.5 text-xs font-semibold rounded-md text-slate-600 transition">List (<span id="q-count">0</span>)</button>
+                </div>
+            </div>
+
+            <!-- Single Question Tab -->
+            <div id="admin-single-pane" class="bg-white rounded-2xl shadow-md p-6 border border-slate-200">
+                <h3 class="font-semibold text-slate-800 mb-4">Add Single Question & Options</h3>
+                <form onsubmit="addSingleQuestion(event)" class="space-y-4">
+                    <textarea id="single-q" rows="2" required placeholder="Type question here..." class="w-full p-2.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <input type="text" id="opt-0" required placeholder="Option A" class="p-2.5 border rounded-lg text-sm outline-none">
+                        <input type="text" id="opt-1" required placeholder="Option B" class="p-2.5 border rounded-lg text-sm outline-none">
+                        <input type="text" id="opt-2" required placeholder="Option C" class="p-2.5 border rounded-lg text-sm outline-none">
+                        <input type="text" id="opt-3" required placeholder="Option D" class="p-2.5 border rounded-lg text-sm outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">Select Correct Option</label>
+                        <select id="correct-opt" class="w-full p-2.5 border rounded-lg text-sm outline-none">
+                            <option value="0">Option A</option>
+                            <option value="1">Option B</option>
+                            <option value="2">Option C</option>
+                            <option value="3">Option D</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-5 py-2.5 rounded-lg shadow transition">Save Question</button>
+                </form>
+            </div>
+
+            <!-- Bulk Import Tab -->
+            <div id="admin-bulk-pane" class="hidden bg-white rounded-2xl shadow-md p-6 border border-slate-200 space-y-3">
+                <h3 class="font-semibold text-slate-800">Bulk Add Multiple Questions (JSON Format)</h3>
+                <p class="text-xs text-slate-500">Paste multiple questions at once using the format below.</p>
+                <textarea id="bulk-json" rows="6" class="w-full p-3 font-mono text-xs border rounded-lg outline-none" placeholder='[
+  {
+    "question": "Sample Question?",
+    "options": ["A", "B", "C", "D"],
+    "correctAnswer": 0
+  }
+]'></textarea>
+                <div class="flex gap-2">
+                    <button onclick="importBulk()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg">Import Bulk</button>
+                    <button onclick="loadSampleTemplate()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-sm font-medium px-4 py-2 rounded-lg">Load Template</button>
+                </div>
+            </div>
+
+            <!-- Manage Questions Tab -->
+            <div id="admin-manage-pane" class="hidden bg-white rounded-2xl shadow-md p-6 border border-slate-200 space-y-4">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-semibold text-slate-800">Question Database</h3>
+                    <button onclick="clearAll()" class="text-xs bg-red-100 hover:bg-red-200 text-red-600 px-3 py-1 rounded font-medium">Clear All</button>
+                </div>
+                <div id="questions-list" class="space-y-3 max-h-96 overflow-y-auto pr-1"></div>
+            </div>
+        </div>
+
+        <!-- 3. STUDENT PRACTICE VIEW -->
+        <div id="view-student" class="hidden space-y-6">
+            <div class="bg-white rounded-2xl shadow-md p-6 border border-slate-200 flex justify-between items-center">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900">Practice Session</h2>
+                    <p class="text-sm text-slate-500">Choose the correct answer for each question.</p>
+                </div>
+                <span id="quiz-count-badge" class="text-xs font-semibold bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full"></span>
+            </div>
+
+            <div id="quiz-questions-container" class="space-y-4"></div>
+
+            <div class="text-center pt-2">
+                <button onclick="submitQuiz()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-xl shadow-md transition text-base">
+                    Submit & View Marks
+                </button>
+            </div>
+        </div>
+
+        <!-- 4. RESULT VIEW -->
+        <div id="view-result" class="hidden bg-white rounded-2xl shadow-xl p-8 border border-slate-200 text-center space-y-5">
+            <div class="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-3xl mx-auto font-bold" id="score-circle">
+                0%
+            </div>
+            <div>
+                <h2 class="text-2xl font-bold text-slate-900">Quiz Completed!</h2>
+                <p id="result-message" class="text-sm text-slate-500 mt-1"></p>
+            </div>
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 grid grid-cols-2 gap-4">
+                <div>
+                    <span class="block text-xs text-slate-400 font-semibold uppercase">Correct Answers</span>
+                    <span id="res-correct" class="text-xl font-bold text-emerald-600">0</span>
+                </div>
+                <div>
+                    <span class="block text-xs text-slate-400 font-semibold uppercase">Total Questions</span>
+                    <span id="res-total" class="text-xl font-bold text-slate-700">0</span>
+                </div>
+            </div>
+            <div class="flex gap-3 pt-2">
+                <button onclick="restartPractice()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-lg font-medium shadow transition">Practice Again</button>
+                <button onclick="logout()" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 py-2.5 rounded-lg font-medium transition">Log Out</button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Script Logic -->
+    <script>
+        const STORAGE_KEY = 'quiz_app_data_v1';
+        let questions = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [
+            {
+                question: "What does HTML stand for?",
+                options: ["Hyper Text Markup Language", "Home Tool Markup Language", "Hyperlinks and Text Markup Language", "Hyperlinking Text Management Language"],
+                correctAnswer: 0
+            }
+        ];
+        let studentAnswers = {};
+        let currentUser = null;
+
+        function saveToStorage() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(questions));
+            document.getElementById('q-count').innerText = questions.length;
+        }
+        saveToStorage();
+
+        function toggleLoginFields() {
+            let role = document.getElementById('login-role').value;
+            document.getElementById('field-student-name').classList.toggle('hidden', role === 'admin');
+            document.getElementById('field-admin-pass').classList.toggle('hidden', role !== 'admin');
+        }
+
+        function handleLogin() {
+            let role = document.getElementById('login-role').value;
+            if (role === 'admin') {
+                let pass = document.getElementById('admin-pass').value;
+                if (pass !== 'admin123' && pass !== '') {
+                    alert('Incorrect password! (Default password is: admin123)');
+                    return;
+                }
+                currentUser = { role: 'admin', name: 'Admin' };
+                showView('view-admin');
+                renderAdminList();
+            } else {
+                let name = document.getElementById('student-name').value.trim();
+                if (!name) {
+                    alert('Please enter your name to practice.');
+                    return;
+                }
+                currentUser = { role: 'student', name: name };
+                showView('view-student');
+                renderStudentQuiz();
+            }
+            document.getElementById('user-badge').classList.remove('hidden');
+            document.getElementById('display-name').innerText = currentUser.name;
+        }
+
+        function logout() {
+            currentUser = null;
+            studentAnswers = {};
+            document.getElementById('user-badge').classList.add('hidden');
+            showView('view-login');
+        }
+
+        function showView(viewId) {
+            ['view-login', 'view-admin', 'view-student', 'view-result'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+            document.getElementById(viewId).classList.remove('hidden');
+        }
+
+        // Admin Tabs
+        function switchAdminTab(tab) {
+            ['single', 'bulk', 'manage'].forEach(t => {
+                document.getElementById(`admin-${t}-pane`).classList.add('hidden');
+                document.getElementById(`tab-${t}-btn`).className = "px-3 py-1.5 text-xs font-semibold rounded-md text-slate-600 transition";
+            });
+            document.getElementById(`admin-${tab}-pane`).classList.remove('hidden');
+            document.getElementById(`tab-${tab}-btn`).className = "px-3 py-1.5 text-xs font-semibold rounded-md bg-white text-indigo-600 shadow-sm transition";
+            if (tab === 'manage') renderAdminList();
+        }
+
+        function addSingleQuestion(e) {
+            e.preventDefault();
+            let q = document.getElementById('single-q').value.trim();
+            let opts = [
+                document.getElementById('opt-0').value.trim(),
+                document.getElementById('opt-1').value.trim(),
+                document.getElementById('opt-2').value.trim(),
+                document.getElementById('opt-3').value.trim()
+            ];
+            let correct = parseInt(document.getElementById('correct-opt').value);
+
+            questions.push({ question: q, options: opts, correctAnswer: correct });
+            saveToStorage();
+            e.target.reset();
+            alert('Question added successfully!');
+        }
+
+        function loadSampleTemplate() {
+            let sample = [
+                {
+                    question: "Which language runs in a web browser?",
+                    options: ["Java", "C++", "JavaScript", "Python"],
+                    correctAnswer: 2
+                }
+            ];
+            document.getElementById('bulk-json').value = JSON.stringify(sample, null, 2);
+        }
+
+        function importBulk() {
+            try {
+                let parsed = JSON.parse(document.getElementById('bulk-json').value);
+                if (!Array.isArray(parsed)) throw new Error();
+                parsed.forEach(item => {
+                    if (item.question && Array.isArray(item.options) && item.options.length === 4) {
+                        questions.push(item);
+                    }
+                });
+                saveToStorage();
+                alert('Bulk questions imported successfully!');
+                switchAdminTab('manage');
+            } catch (err) {
+                alert('Invalid JSON structure. Please check your syntax and try again.');
+            }
+        }
+
+        function renderAdminList() {
+            let list = document.getElementById('questions-list');
+            if (questions.length === 0) {
+                list.innerHTML = `<p class="text-xs text-slate-400 text-center py-4">No questions added yet.</p>`;
+                return;
+            }
+            list.innerHTML = questions.map((q, i) => `
+                <div class="p-3 border rounded-xl bg-slate-50 flex justify-between items-start gap-3 text-sm">
+                    <div>
+                        <span class="font-bold text-indigo-600">Q${i+1}.</span> ${q.question}
+                        <ul class="text-xs text-slate-500 mt-1 space-y-0.5">
+                            ${q.options.map((o, idx) => `<li class="${idx === q.correctAnswer ? 'text-emerald-600 font-semibold':''}">- ${o} ${idx === q.correctAnswer ? '(Correct)':''}</li>`).join('')}
+                        </ul>
+                    </div>
+                    <button onclick="deleteQ(${i})" class="text-red-500 hover:text-red-700 text-xs px-2 py-1 bg-white border rounded">Delete</button>
+                </div>
+            `).join('');
+        }
+
+        function deleteQ(i) {
+            if (confirm('Delete this question?')) {
+                questions.splice(i, 1);
+                saveToStorage();
+                renderAdminList();
+            }
+        }
+
+        function clearAll() {
+            if (confirm('Delete all questions?')) {
+                questions = [];
+                saveToStorage();
+                renderAdminList();
+            }
+        }
+
+        // Student Practice Engine
+        function renderStudentQuiz() {
+            studentAnswers = {};
+            let container = document.getElementById('quiz-questions-container');
+            document.getElementById('quiz-count-badge').innerText = `${questions.length} Question${questions.length > 1 ? 's':''}`;
+
+            if (questions.length === 0) {
+                container.innerHTML = `<div class="bg-white p-6 rounded-2xl shadow text-center text-slate-400 text-sm">No questions available. Please ask the admin to add questions.</div>`;
+                return;
+            }
+
+            container.innerHTML = questions.map((q, qIdx) => `
+                <div class="bg-white rounded-2xl shadow-md p-6 border border-slate-200">
+                    <h3 class="font-semibold text-slate-900 text-sm sm:text-base mb-3"><span class="text-indigo-600">Q${qIdx+1}.</span> ${q.question}</h3>
+                    <div class="space-y-2">
+                        ${q.options.map((opt, optIdx) => `
+                            <label class="flex items-center gap-3 p-3 rounded-xl border border-slate-200 hover:bg-indigo-50/40 hover:border-indigo-300 cursor-pointer transition text-sm">
+                                <input type="radio" name="q_${qIdx}" value="${optIdx}" onchange="studentAnswers[${qIdx}] = ${optIdx}" class="text-indigo-600">
+                                <span class="text-slate-700">${opt}</span>
+                            </label>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function submitQuiz() {
+            let answered = Object.keys(studentAnswers).length;
+            if (answered < questions.length) {
+                if (!confirm(`You have answered ${answered} out of ${questions.length} questions. Do you still want to submit?`)) return;
+            }
+
+            let correct = 0;
+            questions.forEach((q, i) => {
+                if (studentAnswers[i] === q.correctAnswer) correct++;
+            });
+
+            let percentage = questions.length > 0 ? Math.round((correct / questions.length) * 100) : 0;
+            document.getElementById('score-circle').innerText = `${percentage}%`;
+            document.getElementById('result-message').innerText = `Great job, ${currentUser.name}! You scored ${correct} out of ${questions.length} correct.`;
+            document.getElementById('res-correct').innerText = correct;
+            document.getElementById('res-total').innerText = questions.length;
+
+            showView('view-result');
+        }
+
+        function restartPractice() {
+            showView('view-student');
+            renderStudentQuiz();
+        }
+    </script>
+</body>
+</html>
